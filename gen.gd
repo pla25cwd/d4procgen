@@ -7,7 +7,7 @@ extends Node3D
 			return
 		
 		_gen_basepath()
-		_gen_heightpath()
+#		_gen_heightpath()
 		_gen_roadmesh()
 
 @export var seed_hashed : String = "" :
@@ -73,10 +73,21 @@ func _gen_ease(i : float, end : float, max : float):
 	else:
 		return 1
 
+func _gen_hmnoise(pos : Vector2):
+	var tmp_bn = basenoise.get_noise_2d(pos.x, pos.y)
+	tmp_bn = remap(tmp_bn, 0, 1, hm_bn_range.x, hm_bn_range.y)
+	var tmp_dn = detailnoise.get_noise_2d(pos.x, pos.y)
+	tmp_dn = remap(tmp_dn, 0, 1, hm_dn_range.x, hm_dn_range.y)
+	return tmp_bn + tmp_dn
+
 @export var basenoise : FastNoiseLite
 @export var detailnoise : FastNoiseLite
 
+@export_group("General")
 @export var detail_interval : float = 2
+@export var hm_bn_range : Vector2 = Vector2(0, 30)
+@export var hm_dn_range : Vector2 = Vector2(-1, 1)
+@export var hm_ease_end : float = 10
 
 @export_group("BasePath")
 @export var t_gen_basepath : bool = false :
@@ -95,6 +106,7 @@ func _gen_ease(i : float, end : float, max : float):
 
 func _gen_basepath():
 	bp_basecurve = Curve3D.new()
+	bp_basepath.curve = bp_basecurve
 	bp_basecurve.add_point(Vector3.BACK*10)
 	bp_basecurve.add_point(Vector3.FORWARD)
 	bp_basecurve.bake_interval = detail_interval
@@ -111,39 +123,6 @@ func _gen_basepath():
 			Vector3(0, 0, -10+rng.randf_range(-bp_handle_range, bp_handle_range)))
 	
 	bp_basecurve.add_point(bp_basecurve.get_point_position(bp_point_count+1)+Vector3.FORWARD*30)
-	bp_basepath.curve = bp_basecurve
-
-@export_group("HeightPath")
-@export var t_gen_heightpath : bool = false :
-	set(value):
-		if !_gen_checks():
-			return
-		_gen_heightpath()
-
-@export var hp_heightpath : Path3D
-@export var hp_heightcurve : Curve3D
-@export var hp_bn_range : Vector2 = Vector2(0, 30)
-@export var hp_dn_range : Vector2 = Vector2(-1, 1)
-@export var hp_ease_end : float = 10
-
-func _hp_noise(pos : Vector2):
-	var tmp_bn = basenoise.get_noise_2d(pos.x, pos.y)
-	tmp_bn = remap(tmp_bn, 0, 1, hp_bn_range.x, hp_bn_range.y)
-	var tmp_dn = detailnoise.get_noise_2d(pos.x, pos.y)
-	tmp_dn = remap(tmp_dn, 0, 1, hp_dn_range.x, hp_dn_range.y)
-	return tmp_bn + tmp_dn
-
-func _gen_heightpath():
-	hp_heightcurve = Curve3D.new()
-	hp_heightcurve.bake_interval = detail_interval
-	var vec_current : Vector3 = Vector3.ZERO
-	var baked_length = bp_basecurve.get_baked_length()
-	for i in range(0, baked_length, detail_interval):
-		vec_current = bp_basecurve.sample_baked(i)
-		vec_current.y = _hp_noise(Vector2(vec_current.x, vec_current.z))*_gen_ease(i/detail_interval, hp_ease_end, baked_length)
-		hp_heightcurve.add_point(vec_current)
-
-	hp_heightpath.curve = hp_heightcurve
 
 @export_group("RoadMesh")
 @export var t_gen_roadmesh : bool = false :
@@ -184,28 +163,27 @@ func _gen_roadmesh():
 	var vec_right : Vector2
 	var vec3_right : Vector3
 
-	rm_uv_ratio = hp_heightcurve.get_baked_length() / rm_road_width
+	rm_uv_ratio = bp_basecurve.get_baked_length() / rm_road_width
 
-	var point_count = hp_heightcurve.point_count
+	var point_count = bp_basecurve.get_baked_length()/detail_interval
 	for p in point_count:
 		if p+2 > point_count:
 			break
 		
-		vec_current = hp_heightcurve.get_point_position(p)
-		vec_next = hp_heightcurve.get_point_position(p+1)
+		vec_current = bp_basecurve.sample_baked(p*detail_interval)
+		vec_next = bp_basecurve.sample_baked((p+1)*detail_interval)
 		vec_left = _rm_angle_to(vec_current, vec_next).rotated(-90)*rm_road_width/2
-		vec3_left = vec_current + Vector3(vec_right.x, randf_range(-0.1,0.1), vec_right.y)
-		vec3_left.y = (((_hp_noise(Vector2(vec3_left.x, vec3_left.z))-vec_current.y)/2)+vec_current.y)*_gen_ease(p, hp_ease_end, point_count)
+		vec3_left = vec_current + Vector3(vec_right.x, 0, vec_right.y)
+		vec3_left.y = (((_gen_hmnoise(Vector2(vec3_left.x, vec3_left.z))-vec_current.y)/2)+vec_current.y)*_gen_ease(p, hm_ease_end, point_count)
 		vec_right = _rm_angle_to(vec_current, vec_next).rotated(90)*rm_road_width/2
-		vec3_right = vec_current + Vector3(vec_left.x, randf_range(-0.1,0.1), vec_left.y)
-		vec3_right.y = (((_hp_noise(Vector2(vec3_right.x, vec3_right.z))-vec_current.y)/2)+vec_current.y)*_gen_ease(p, hp_ease_end, point_count)
+		vec3_right = vec_current + Vector3(vec_left.x, 0, vec_left.y)
+		vec3_right.y = (((_gen_hmnoise(Vector2(vec3_right.x, vec3_right.z))-vec_current.y)/2)+vec_current.y)*_gen_ease(p, hm_ease_end, point_count)
 		
 		rm_verts.append(vec3_left)
 		rm_verts.append(vec3_right)
 
-		
-		uv_base = p/float(hp_heightcurve.point_count)
-		uv_current = (uv_base*rm_uv_ratio)/rm_uv_repeat
+		uv_base = p/float(point_count)
+		uv_current = wrapf((uv_base*rm_uv_ratio)/rm_uv_repeat, 0, 1)
 		
 		rm_uvs.append(uv_current) # still not normalized. lol
 
