@@ -1,14 +1,30 @@
 @tool
 extends Node3D
 
+var p_times : Dictionary
+
+func _p_start(a : String):
+	p_times[a] = Vector3(Time.get_ticks_msec(), 0, 0)
+
+func _p_end(a : String):
+	p_times[a].y = Time.get_ticks_msec()
+	p_times[a].z = p_times[a].y-p_times[a].x
+	print("finished {0} in {1}ms / {2}s".format([a, p_times[a].z, p_times[a].z/1000.0]))
+
 @export var generate : bool = false :
 	set(value):
+		p_times = {}
+		_p_start("generating")
 		if !_gen_checks():
 			return
 		
+		_p_start("basepath")
 		_gen_basepath()
-#		_gen_heightpath()
+		_p_end("basepath")
+		_p_start("roadmesh")
 		_gen_roadmesh()
+		_p_end("roadmesh")
+		_p_end("generating")
 
 @export var seed_hashed : String = "" :
 	set(value):
@@ -54,13 +70,19 @@ func _gen_checks():
 	if basenoise != null:
 		basenoise.seed = seed
 	else:
-		printerr("HP BaseNoise is Missing")
+		printerr("BaseNoise is Missing")
 		return false
 		
 	if detailnoise != null:
 		detailnoise.seed = seed
 	else:
-		printerr("HP DetailNoise is Missing")
+		printerr("DetailNoise is Missing")
+		return false
+		
+	if worldnoise != null:
+		worldnoise.seed = seed
+	else:
+		printerr("WorldNoise is Missing")
 		return false
 		
 	return true
@@ -75,18 +97,23 @@ func _gen_ease(i : float, end : float, max : float):
 
 func _gen_hmnoise(pos : Vector2):
 	var tmp_bn = basenoise.get_noise_2d(pos.x, pos.y)
-	tmp_bn = remap(tmp_bn, 0, 1, hm_bn_range.x, hm_bn_range.y)
+	tmp_bn = remap(tmp_bn, -1, 1, hm_bn_range.x, hm_bn_range.y)
 	var tmp_dn = detailnoise.get_noise_2d(pos.x, pos.y)
-	tmp_dn = remap(tmp_dn, 0, 1, hm_dn_range.x, hm_dn_range.y)
-	return tmp_bn + tmp_dn
+	tmp_dn = remap(tmp_dn, -1, 1, hm_dn_range.x, hm_dn_range.y)
+	var tmp_wn = worldnoise.get_noise_2d(pos.x, pos.y)
+	tmp_wn = remap(tmp_wn, -1, 1, hm_wn_range.x, hm_wn_range.y)
+	return tmp_bn + tmp_dn + tmp_wn
 
-@export var basenoise : FastNoiseLite
-@export var detailnoise : FastNoiseLite
+
 
 @export_group("General")
 @export var detail_interval : float = 2
-@export var hm_bn_range : Vector2 = Vector2(0, 30)
+@export var basenoise : FastNoiseLite
+@export var detailnoise : FastNoiseLite
+@export var worldnoise : FastNoiseLite
+@export var hm_bn_range : Vector2 = Vector2(-15, 15)
 @export var hm_dn_range : Vector2 = Vector2(-1, 1)
+@export var hm_wn_range : Vector2 = Vector2(-50, 50)
 @export var hm_ease_end : float = 10
 
 @export_group("BasePath")
@@ -174,10 +201,10 @@ func _gen_roadmesh():
 		vec_next = bp_basecurve.sample_baked((p+1)*detail_interval)
 		vec_left = _rm_angle_to(vec_current, vec_next).rotated(-90)*rm_road_width/2
 		vec3_left = vec_current + Vector3(vec_right.x, 0, vec_right.y)
-		vec3_left.y = (((_gen_hmnoise(Vector2(vec3_left.x, vec3_left.z))-vec_current.y)/2)+vec_current.y)*_gen_ease(p, hm_ease_end, point_count)
+		vec3_left.y = _gen_hmnoise(Vector2(vec3_left.x, vec3_left.z))*_gen_ease(p, hm_ease_end, point_count)
 		vec_right = _rm_angle_to(vec_current, vec_next).rotated(90)*rm_road_width/2
 		vec3_right = vec_current + Vector3(vec_left.x, 0, vec_left.y)
-		vec3_right.y = (((_gen_hmnoise(Vector2(vec3_right.x, vec3_right.z))-vec_current.y)/2)+vec_current.y)*_gen_ease(p, hm_ease_end, point_count)
+		vec3_right.y = _gen_hmnoise(Vector2(vec3_right.x, vec3_right.z))*_gen_ease(p, hm_ease_end, point_count)
 		
 		rm_verts.append(vec3_left)
 		rm_verts.append(vec3_right)
