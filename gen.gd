@@ -172,13 +172,13 @@ func _rm_angle_to(from : Vector3, to : Vector3): # no longer written by a derang
 
 func _rm_winding_order(i):
 	if fmod(i+2, 2) == 0:
-		return [0, 1, 2]
-	else:
 		return [2, 1, 0]
+	else:
+		return [0, 1, 2]
 
 func _gen_roadmesh():
-	var rm_verts = PackedVector3Array()
-	var rm_uvs = PackedFloat32Array()
+	rm_verts = PackedVector3Array()
+	rm_uvs = PackedFloat32Array()
 	
 	var uv_base
 	var uv_current
@@ -199,11 +199,11 @@ func _gen_roadmesh():
 		
 		vec_current = bp_basecurve.sample_baked(p*detail_interval)
 		vec_next = bp_basecurve.sample_baked((p+1)*detail_interval)
-		vec_left = _rm_angle_to(vec_current, vec_next).rotated(-90)*rm_road_width/2
-		vec3_left = vec_current + Vector3(vec_right.x, 0, vec_right.y)
+		vec_left = _rm_angle_to(vec_current, vec_next).rotated(deg_to_rad(-90))*rm_road_width/2
+		vec3_left = vec_current + Vector3(vec_left.x, 0, vec_left.y)
 		vec3_left.y = _gen_hmnoise(Vector2(vec3_left.x, vec3_left.z))*_gen_ease(p, hm_ease_end, point_count)
-		vec_right = _rm_angle_to(vec_current, vec_next).rotated(90)*rm_road_width/2
-		vec3_right = vec_current + Vector3(vec_left.x, 0, vec_left.y)
+		vec_right = _rm_angle_to(vec_current, vec_next).rotated(deg_to_rad(90))*rm_road_width/2
+		vec3_right = vec_current + Vector3(vec_right.x, 0, vec_right.y)
 		vec3_right.y = _gen_hmnoise(Vector2(vec3_right.x, vec3_right.z))*_gen_ease(p, hm_ease_end, point_count)
 		
 		rm_verts.append(vec3_left)
