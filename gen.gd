@@ -163,8 +163,10 @@ func _gen_basepath():
 @export var rm_uv_repeat : int = 4
 @export var rm_verts = PackedVector3Array()
 @export var rm_uvs = PackedFloat32Array()
+@export var rm_uv2s = PackedFloat32Array()
 @export var rm_uv_ratio : float = 0
 @export var rm_mesh : Mesh
+@export var rm_material : ShaderMaterial
 
 func _rm_angle_to(from : Vector3, to : Vector3): # no longer written by a deranged inumerate, just a regular one
 	#return Vector2(from.x, from.z).angle_to_point(Vector2(to.x, to.z))
@@ -179,10 +181,12 @@ func _rm_winding_order(i):
 func _gen_roadmesh():
 	rm_verts = PackedVector3Array()
 	rm_uvs = PackedFloat32Array()
+	rm_uv2s = PackedFloat32Array()
 	
 	var uv_base
 	var uv_current
 	 
+	var baked_length : float
 	var vec_current : Vector3
 	var vec_next : Vector3
 	var vec_left : Vector2
@@ -191,9 +195,11 @@ func _gen_roadmesh():
 	var vec_right : Vector2
 	var vec3_right : Vector3
 
-	rm_uv_ratio = bp_basecurve.get_baked_length()/rm_road_width
+	baked_length = bp_basecurve.get_baked_length()
 
-	var point_count = bp_basecurve.get_baked_length()/detail_interval
+	rm_uv_ratio = baked_length/rm_road_width
+
+	var point_count = baked_length/detail_interval
 	for p in point_count:
 		if p+2 > point_count:
 			break
@@ -216,10 +222,12 @@ func _gen_roadmesh():
 		uv_base = p/float(point_count)
 		uv_current = (uv_base*rm_uv_ratio)/rm_uv_repeat
 		rm_uvs.append(uv_current)
+		rm_uv2s.append(uv_base)
 		
-		uv_base = (p+0.5)/float(point_count)
+		uv_base = (p+0.75)/float(point_count)
 		uv_current = (uv_base*rm_uv_ratio)/rm_uv_repeat
 		rm_uvs.append(uv_current)
+		rm_uv2s.append(uv_base)
 
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -229,6 +237,7 @@ func _gen_roadmesh():
 				continue
 			
 			var v_even = fmod(e+i, 2) == 0
+			st.set_uv2(Vector2(int(v_even), rm_uv2s[e+i]))
 			st.set_uv(Vector2(int(v_even), rm_uvs[e+i]))
 			st.add_vertex(rm_verts[e+i])
 			
@@ -237,3 +246,9 @@ func _gen_roadmesh():
 	st.generate_tangents()
 	rm_mesh = st.commit()
 	rm_meshinstance.mesh = rm_mesh
+	rm_meshinstance.set_material_override(null)
+	for e in rm_material.get_shader().get_shader_uniform_list():
+		if rm_material.get_shader_parameter(e["name"]) is NoiseTexture2D:
+			rm_material.get_shader_parameter(e["name"]).noise.seed = seed
+	
+	rm_meshinstance.set_material_override(rm_material)

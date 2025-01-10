@@ -1,0 +1,62 @@
+[gd_resource type="ShaderMaterial" load_steps=16 format=3 uid="uid://bqeoe4uqe11gw"]
+
+[ext_resource type="Shader" path="res://road.gdshader" id="1_o1gri"]
+[ext_resource type="Texture2D" uid="uid://caf0dp2iuxtmc" path="res://rm_alpha_grad.tres" id="2_f2wjm"]
+[ext_resource type="Texture2D" uid="uid://d3i60f7jrjph3" path="res://rm_alpha_noise.tres" id="3_e2yud"]
+[ext_resource type="Texture2D" uid="uid://c5defv3e0wnc4" path="res://rm_base_color.tres" id="4_yubx1"]
+[ext_resource type="Texture2D" uid="uid://dbfm487glsgb0" path="res://rm_base_detail.tres" id="5_edk3j"]
+[ext_resource type="Texture2D" uid="uid://b5qk2cc2d22ag" path="res://rm_ras_base.tres" id="6_4ih7h"]
+[ext_resource type="Curve" uid="uid://bpllf6w6q7vc0" path="res://rm_tracks_grad.tres" id="7_m6pnq"]
+[ext_resource type="Texture2D" uid="uid://dumlny4kk2rke" path="res://rm_v_alpha_grad.tres" id="8_6c8au"]
+
+[sub_resource type="Gradient" id="Gradient_3n3gy"]
+colors = PackedColorArray(0.25, 0.25, 0.25, 1, 0.65, 0.65, 0.65, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_bqfgu"]
+noise_type = 4
+seed = 373135386
+frequency = 0.4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_70g27"]
+width = 128
+height = 1280
+generate_mipmaps = false
+seamless = true
+color_ramp = SubResource("Gradient_3n3gy")
+noise = SubResource("FastNoiseLite_bqfgu")
+
+[sub_resource type="CurveTexture" id="CurveTexture_uu0bc"]
+width = 64
+curve = ExtResource("7_m6pnq")
+
+[sub_resource type="Gradient" id="Gradient_t43sx"]
+colors = PackedColorArray(0.603797, 0.553238, 0.48596, 1, 0.619608, 0.588235, 0.521569, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_tsotu"]
+noise_type = 3
+seed = 373135386
+frequency = 0.025
+fractal_type = 0
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_31jc2"]
+width = 128
+generate_mipmaps = false
+seamless = true
+color_ramp = SubResource("Gradient_t43sx")
+noise = SubResource("FastNoiseLite_tsotu")
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_o1gri")
+shader_parameter/ras_base_threshold = 0.9
+shader_parameter/ras_base_blend = 0.7
+shader_parameter/s_ras_base = ExtResource("6_4ih7h")
+shader_parameter/s_ras_detail = SubResource("NoiseTexture2D_70g27")
+shader_parameter/s_alpha_grad = ExtResource("2_f2wjm")
+shader_parameter/s_v_alpha_grad = ExtResource("8_6c8au")
+shader_parameter/s_alpha_noise = ExtResource("3_e2yud")
+shader_parameter/s_base_color = ExtResource("4_yubx1")
+shader_parameter/s_base_detail = ExtResource("5_edk3j")
+shader_parameter/s_tracks_grad = SubResource("CurveTexture_uu0bc")
+shader_parameter/s_tracks_noise = ExtResource("3_e2yud")
+shader_parameter/s_tracks_treads = SubResource("NoiseTexture2D_31jc2")
