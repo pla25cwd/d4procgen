@@ -159,8 +159,8 @@ func _gen_basepath():
 		_gen_roadmesh()
 
 @export var rm_meshinstance : MeshInstance3D
-@export var rm_road_width : float = 5
-@export var rm_uv_repeat : int = 2
+@export var rm_road_width : float = 3
+@export var rm_uv_repeat : int = 4
 @export var rm_verts = PackedVector3Array()
 @export var rm_uvs = PackedFloat32Array()
 @export var rm_uv_ratio : float = 0
@@ -186,11 +186,12 @@ func _gen_roadmesh():
 	var vec_current : Vector3
 	var vec_next : Vector3
 	var vec_left : Vector2
+	var vec_angle : Vector2
 	var vec3_left : Vector3
 	var vec_right : Vector2
 	var vec3_right : Vector3
 
-	rm_uv_ratio = bp_basecurve.get_baked_length() / rm_road_width
+	rm_uv_ratio = bp_basecurve.get_baked_length()/rm_road_width
 
 	var point_count = bp_basecurve.get_baked_length()/detail_interval
 	for p in point_count:
@@ -199,10 +200,13 @@ func _gen_roadmesh():
 		
 		vec_current = bp_basecurve.sample_baked(p*detail_interval)
 		vec_next = bp_basecurve.sample_baked((p+1)*detail_interval)
-		vec_left = _rm_angle_to(vec_current, vec_next).rotated(deg_to_rad(-90))*rm_road_width/2
+		vec_angle = _rm_angle_to(vec_current, vec_next)
+		
+		vec_left = vec_angle.rotated(deg_to_rad(-90))*rm_road_width/2
 		vec3_left = vec_current + Vector3(vec_left.x, 0, vec_left.y)
 		vec3_left.y = _gen_hmnoise(Vector2(vec3_left.x, vec3_left.z))*_gen_ease(p, hm_ease_end, point_count)
-		vec_right = _rm_angle_to(vec_current, vec_next).rotated(deg_to_rad(90))*rm_road_width/2
+		
+		vec_right = (vec_angle + vec_angle.orthogonal()*detail_interval/2).rotated(deg_to_rad(90))*rm_road_width/2
 		vec3_right = vec_current + Vector3(vec_right.x, 0, vec_right.y)
 		vec3_right.y = _gen_hmnoise(Vector2(vec3_right.x, vec3_right.z))*_gen_ease(p, hm_ease_end, point_count)
 		
@@ -210,9 +214,12 @@ func _gen_roadmesh():
 		rm_verts.append(vec3_right)
 
 		uv_base = p/float(point_count)
-		uv_current = wrapf((uv_base*rm_uv_ratio)/rm_uv_repeat, 0, 1)
+		uv_current = (uv_base*rm_uv_ratio)/rm_uv_repeat
+		rm_uvs.append(uv_current)
 		
-		rm_uvs.append(uv_current) # still not normalized. lol
+		uv_base = (p+0.5)/float(point_count)
+		uv_current = (uv_base*rm_uv_ratio)/rm_uv_repeat
+		rm_uvs.append(uv_current)
 
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -222,7 +229,7 @@ func _gen_roadmesh():
 				continue
 			
 			var v_even = fmod(e+i, 2) == 0
-			st.set_uv(Vector2(int(v_even), rm_uvs[(e+i)/2]))
+			st.set_uv(Vector2(int(v_even), rm_uvs[e+i]))
 			st.add_vertex(rm_verts[e+i])
 			
 	st.index()
