@@ -87,11 +87,18 @@ func _gen_checks():
 		
 	return true
 	
-func _gen_ease(i : float, end : float, max : float):
+func _gen_ease(i : float, start : float, end : float, max : float):
+	prints(i, start, end, max)
 	if i < end:
-		return i/end
+		if i < start:
+			return 0
+		else:
+			return i/(end)
 	elif i > max-end:
-		return (max-i)/end
+		if i > max-start:
+			return 0
+		else:
+			return (max-i-start)/(end)
 	else:
 		return 1
 
@@ -114,7 +121,7 @@ func _gen_hmnoise(pos : Vector2):
 @export var hm_bn_range : Vector2 = Vector2(-15, 15)
 @export var hm_dn_range : Vector2 = Vector2(-1, 1)
 @export var hm_wn_range : Vector2 = Vector2(-50, 50)
-@export var hm_ease_end : float = 10
+@export var hm_ease : Vector2 = Vector2(2, 10)
 
 @export_group("BasePath")
 @export var t_gen_basepath : bool = false :
@@ -129,7 +136,7 @@ func _gen_hmnoise(pos : Vector2):
 @export var bp_x_range : Vector2 = Vector2(-45, 45)
 @export var bp_z_range : Vector2 = Vector2(-15, -20)
 @export var bp_handle_range : float = 2
-@export var bp_ease_end : float = 1
+@export var bp_ease : Vector2 = Vector2(0, 2)
 
 func _gen_basepath():
 	bp_basecurve = Curve3D.new()
@@ -144,7 +151,7 @@ func _gen_basepath():
 	for i in bp_point_count:
 		vec_prev = bp_basecurve.get_point_position(i+1)
 		vec_forward = vec_prev.direction_to(bp_basecurve.get_point_position(i))
-		vec_rand = Vector3(rng.randf_range(bp_x_range.x, bp_x_range.y) * _gen_ease(i, bp_ease_end, bp_point_count), 0, rng.randf_range(bp_z_range.x, bp_z_range.y))
+		vec_rand = Vector3(rng.randf_range(bp_x_range.x, bp_x_range.y) * _gen_ease(i, bp_ease.x, bp_ease.y, bp_point_count), 0, rng.randf_range(bp_z_range.x, bp_z_range.y))
 		bp_basecurve.add_point(vec_prev + vec_forward + vec_rand, 
 			Vector3(0, 0, 10+rng.randf_range(-bp_handle_range, bp_handle_range)), 
 			Vector3(0, 0, -10+rng.randf_range(-bp_handle_range, bp_handle_range)))
@@ -210,11 +217,11 @@ func _gen_roadmesh():
 		
 		vec_left = vec_angle.rotated(deg_to_rad(-90))*rm_road_width/2
 		vec3_left = vec_current + Vector3(vec_left.x, 0, vec_left.y)
-		vec3_left.y = _gen_hmnoise(Vector2(vec3_left.x, vec3_left.z))*_gen_ease(p, hm_ease_end, point_count)
+		vec3_left.y = _gen_hmnoise(Vector2(vec3_left.x, vec3_left.z))*_gen_ease(p, hm_ease.x, hm_ease.y, point_count)
 		
 		vec_right = (vec_angle + vec_angle.orthogonal()*detail_interval/2).rotated(deg_to_rad(90))*rm_road_width/2
 		vec3_right = vec_current + Vector3(vec_right.x, 0, vec_right.y)
-		vec3_right.y = _gen_hmnoise(Vector2(vec3_right.x, vec3_right.z))*_gen_ease(p, hm_ease_end, point_count)
+		vec3_right.y = _gen_hmnoise(Vector2(vec3_right.x, vec3_right.z))*_gen_ease(p, hm_ease.x, hm_ease.y, point_count)
 		
 		rm_verts.append(vec3_left)
 		rm_verts.append(vec3_right)

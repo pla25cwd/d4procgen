@@ -28,7 +28,7 @@ void fragment() {
 	vec4 alpha_grad = texture(s_alpha_grad, UV);
 	vec4 v_alpha_grad = texture(s_v_alpha_grad, vec2(UV2.y, UV2.x));
 	vec4 alpha_noise = texture(s_alpha_noise, UV);
-	ALPHA = (alpha_grad.r - v_alpha_grad.r*2.0) + alpha_noise.r*alpha_grad.r;
+	ALPHA = alpha_grad.r + ((alpha_grad.r - alpha_noise.r)*0.3) - v_alpha_grad.r;
 
 
 	vec4 base_color = texture(s_base_color, UV+0.5);
