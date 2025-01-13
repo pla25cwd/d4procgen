@@ -21,9 +21,15 @@ func _p_end(a : String):
 		_p_start("basepath")
 		_gen_basepath()
 		_p_end("basepath")
+
 		_p_start("roadmesh")
 		_gen_roadmesh()
 		_p_end("roadmesh")
+		
+		_p_start("fecal")
+		_gen_fecal()
+		_p_end("fecal")
+		
 		_p_end("generating")
 
 @export var seed_hashed : String = "" :
@@ -172,6 +178,7 @@ func _gen_basepath():
 @export var rm_uvs = PackedFloat32Array()
 @export var rm_uv2s = PackedFloat32Array()
 @export var rm_uv_ratio : float = 0
+@export var rm_aabb : AABB
 @export var rm_mesh : Mesh
 @export var rm_material : ShaderMaterial
 
@@ -252,6 +259,7 @@ func _gen_roadmesh():
 	st.generate_normals()
 	st.generate_tangents()
 	rm_mesh = st.commit()
+	rm_aabb = rm_mesh.get_aabb()
 	rm_meshinstance.mesh = rm_mesh
 	rm_meshinstance.set_material_override(null)
 	for e in rm_material.get_shader().get_shader_uniform_list():
@@ -259,3 +267,35 @@ func _gen_roadmesh():
 			rm_material.get_shader_parameter(e["name"]).noise.seed = seed
 	
 	rm_meshinstance.set_material_override(rm_material)
+
+@export_subgroup("FECAL") # Fast-er Euclidean Calculation Algorithm
+@export var t_gen_fecal : bool = false :
+	set(value):
+		if !_gen_checks():
+			return
+		_gen_fecal()
+			
+@export var fc_divisor : float = 10
+@export var fc_buckets : Array[Array]
+
+func _fc_get_coords(n : Vector3):
+	return round(Vector2(n.x + rm_aabb.size.x, n.z + rm_aabb.size.z)) / fc_divisor
+
+func _fc_get_bucket_contents(c : Vector2):
+	if fc_buckets.size() >= c.x+1:
+		if fc_buckets[c.x].size() >= c.y+1:
+			return fc_buckets[c.x][c.y]
+		
+	return null
+
+func _gen_fecal():
+	fc_buckets = []
+	for e in rm_verts:
+		var current = _fc_get_coords(e)
+		if fc_buckets.size() <= current.y:
+			fc_buckets.resize(current.y+1)
+
+		while fc_buckets[current.y].size() <= current.x:
+			fc_buckets[current.y].append(PackedVector3Array())
+		
+		fc_buckets[current.y][current.x].append(e)
