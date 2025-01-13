@@ -79,7 +79,6 @@ mesh = SubResource("ArrayMesh_bpyq0")
 
 [node name="clouds" parent="." instance=ExtResource("6_16eyl")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
-visible = false
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(0.983255, 0.136907, 0.120276, 0, 0.660002, -0.751264, -0.182236, 0.738684, 0.64895, 0, 4.36, 1.095)

@@ -4,7 +4,7 @@ var noise : FastNoiseLite
 var pos_offset : float = 0
 
 func _ready() -> void:
-	noise = get_material_override().get_shader_parameter("noise").get_noise()
+	noise = get_material_override().get_shader_parameter("i_noise").get_noise()
 	noise.seed = randi()
 	
 func _physics_process(delta: float) -> void:

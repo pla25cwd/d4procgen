@@ -1,45 +1,18 @@
-[gd_scene load_steps=10 format=3 uid="uid://d6yhk13ad12x"]
+[gd_scene load_steps=7 format=3 uid="uid://d6yhk13ad12x"]
 
 [ext_resource type="Shader" path="res://clouds.gdshader" id="1_a6kjc"]
+[ext_resource type="NoiseTexture3D" uid="uid://c7dpem1ywbrqr" path="res://clouds_noise.tres" id="2_omqjv"]
+[ext_resource type="Texture2D" uid="uid://dmktotqkn8myw" path="res://clouds_alpha.tres" id="2_p57xp"]
 [ext_resource type="Script" path="res://clouds.gd" id="2_smx3o"]
-
-[sub_resource type="Gradient" id="Gradient_6sxke"]
-offsets = PackedFloat32Array(0, 0.7)
-colors = PackedColorArray(1, 1, 1, 1, 0, 0, 0, 1)
-
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_3bnqu"]
-gradient = SubResource("Gradient_6sxke")
-width = 128
-height = 128
-fill = 1
-fill_from = Vector2(0.5, 0.5)
-fill_to = Vector2(1, 1)
-
-[sub_resource type="Gradient" id="Gradient_02h3m"]
-offsets = PackedFloat32Array(0.6, 1)
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_sdnlc"]
-noise_type = 5
-seed = 135609250
-fractal_octaves = 10
-
-[sub_resource type="NoiseTexture3D" id="NoiseTexture3D_4ihrx"]
-width = 1024
-height = 1024
-depth = 1
-color_ramp = SubResource("Gradient_02h3m")
-noise = SubResource("FastNoiseLite_sdnlc")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_8nsv5"]
 render_priority = 0
 shader = ExtResource("1_a6kjc")
-shader_parameter/noise = SubResource("NoiseTexture3D_4ihrx")
-shader_parameter/alpha = SubResource("GradientTexture2D_3bnqu")
+shader_parameter/i_noise = ExtResource("2_omqjv")
+shader_parameter/i_alpha = ExtResource("2_p57xp")
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3fjis"]
 size = Vector2(1000, 1000)
-subdivide_width = 10
-subdivide_depth = 10
 
 [node name="clouds" type="MeshInstance3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 250, 0)
