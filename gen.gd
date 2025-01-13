@@ -51,6 +51,7 @@ func _p_end(a : String):
 		if detailnoise != null:
 			detailnoise.seed = seed
 
+
 var rng = RandomNumberGenerator.new()
 
 func _gen_checks():
@@ -97,7 +98,7 @@ func _gen_ease(i : float, start : float, end : float, max : float):
 		if i > max-start:
 			return 0
 		else:
-			return (max-i-start)/(end)
+			return (max-i-start)/(end-start)
 	else:
 		return 1
 

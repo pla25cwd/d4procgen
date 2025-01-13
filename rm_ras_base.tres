@@ -5,7 +5,7 @@
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_frlx8"]
 noise_type = 3
 seed = 373135386
-frequency = 0.05
+frequency = 0.03
 
 [resource]
 width = 128
