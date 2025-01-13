@@ -88,7 +88,6 @@ func _gen_checks():
 	return true
 	
 func _gen_ease(i : float, start : float, end : float, max : float):
-	prints(i, start, end, max)
 	if i < end:
 		if i < start:
 			return 0
