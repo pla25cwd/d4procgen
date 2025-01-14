@@ -26,10 +26,6 @@ func _p_end(a : String):
 		_gen_roadmesh()
 		_p_end("roadmesh")
 		
-		_p_start("fecal")
-		_gen_fecal()
-		_p_end("fecal")
-		
 		_p_end("generating")
 
 @export var seed_hashed : String = "" :
@@ -268,80 +264,13 @@ func _gen_roadmesh():
 	
 	rm_meshinstance.set_material_override(rm_material)
 
-@export_subgroup("FECAL") # Fast-er Euclidean Calculation Algorithm
-@export var t_gen_fecal : bool = false :
-	set(value):
-		if !_gen_checks():
-			return
-		_gen_fecal()
-			
-@export var fc_divisor : float = 10
-@export var fc_min_possible_size : int = 5
-@export var fc_max_search_radius : int = 5
-@export var fc_buckets : Array[Array]
+@export_subgroup("EnvironmentBase")
 
-func _fc_make_ordering(dist : int):
-	if dist == 0:
-		return Vector2.ZERO
-	
-	var tmp_arr = PackedVector2Array()
-	for x in range(-dist, dist, 1):
-		tmp_arr.append(Vector2(x, dist))
-	for y in range(dist, -dist, -1):
-		tmp_arr.append(Vector2(dist, y))
-	for x in range(dist, -dist, -1):
-		tmp_arr.append(Vector2(x, -dist))
-	for y in range(-dist, dist, 1):
-		tmp_arr.append(Vector2(-dist, y))
-
-	return tmp_arr
-
-func _fc_get_coords(n : Vector3):
-	return round(Vector2(n.x + rm_aabb.size.x, n.z + rm_aabb.size.z) / fc_divisor)
-
-func _fc_get_bucket_contents(c : Vector2):
-	if fc_buckets.size() >= c.y+1:
-		if fc_buckets[c.y].size() >= c.x+1:
-			return fc_buckets[c.y][c.x]
-
-func _fc_get_closest(g : Vector3):
-	var coords = _fc_get_coords(g)
-	var possible_arr : PackedVector3Array = PackedVector3Array()
-	var possible_arr_current
-	var possible_distance : float = 0
-	var closest : Vector3 = Vector3.ZERO
-	var closest_distance : float = 1000000
-	var search_radius = 0
-	while possible_arr.size() < fc_min_possible_size:
-		if search_radius > fc_max_search_radius:
-			print("radius too high, aborting. if you are close to a road, this is really bad and you are some sort of moron and baboon hybrid")
-			break
-		for e in _fc_make_ordering(search_radius):
-			possible_arr_current = _fc_get_bucket_contents(coords + e)
-			if possible_arr_current:
-				possible_arr.append_array(possible_arr_current)
-		
-		search_radius += 1
-	
-	for e in possible_arr:
-		possible_distance = e.distance_to(g)
-		if possible_distance < closest_distance:
-			closest_distance = possible_distance
-			closest = e
-			
-	return closest
-
-func _gen_fecal():
-	fc_buckets = []
-	var aabb_coords = _fc_get_coords(rm_aabb.size)
-	for x in aabb_coords.x:
-		fc_buckets.append([])
-		for y in aabb_coords.y:
-			fc_buckets[x].append(PackedVector3Array())
-	
-	for e in rm_verts:
-		var current = _fc_get_coords(e)
-		fc_buckets[current.y][current.x].append(e)
-
-func _on_timer_timeout() -> void:
-	$m2.position = _fc_get_closest($m1.position)
+func _eb_get_closest(p : Vector3):
+	var current_closest = Vector3.ZERO
+	var current_closest_distance = 1000000000
+	for i in rm_verts:
+		var tmp_distance = i.distance_to(p)
+		if tmp_distance < current_closest_distance:
+			current_closest = i
+			current_closest_distance = tmp_distance
