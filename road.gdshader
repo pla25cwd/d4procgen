@@ -24,7 +24,7 @@ void fragment() {
 	METALLIC = 0.0;
 	SPECULAR = 0.0;
 	ROUGHNESS = 1.0;
-	
+
 	vec4 alpha_grad = texture(s_alpha_grad, UV);
 	vec4 v_alpha_grad = texture(s_v_alpha_grad, vec2(UV2.y, UV2.x));
 	vec4 alpha_noise = texture(s_alpha_noise, UV);
@@ -33,24 +33,24 @@ void fragment() {
 
 	vec4 base_color = texture(s_base_color, UV+0.5);
 	vec4 base_detail = texture(s_base_detail, UV+0.5);
-	
+
 	vec3 color = base_color.rgb * (0.9+(base_detail.r*0.1));
-	
-	
+
+
 	vec4 ras_base = texture(s_ras_base, UV+0.5);
 	vec4 ras_detail = texture(s_ras_detail, UV+0.5);
-	
+
 	float ras_mix = (ras_base.r - ras_base_blend)/(ras_base_threshold-ras_base_blend);
 	color = mix(color, ras_detail.rgb, clamp(ras_mix, 0, 1));
-	
-	
+
+
 	vec4 tracks_grad = texture(s_tracks_grad, UV);
 	vec4 tracks_noise = texture(s_tracks_noise, UV+0.5);
 	vec4 tracks_treads = texture(s_tracks_treads, UV+0.5);
-	
-	color = mix(color, tracks_treads.rgb, (tracks_grad.r - tracks_grad.r*2.0) + tracks_noise.r*tracks_grad.r);	
-	
-	
+
+	color = mix(color, tracks_treads.rgb, (tracks_grad.r - tracks_grad.r*2.0) + tracks_noise.r*tracks_grad.r);
+
+
 	ALBEDO = color;
 
 }
